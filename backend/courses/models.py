@@ -22,6 +22,33 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.title
+    
+class Quiz(models.Model):
+    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.title
+
+
+class Question(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+    text = models.CharField(max_length=255)
+    option_a = models.CharField(max_length=200)
+    option_b = models.CharField(max_length=200)
+    option_c = models.CharField(max_length=200)
+    option_d = models.CharField(max_length=200)
+    correct = models.CharField(max_length=1)  # A, B, C, D
+
+    def __str__(self):
+        return self.text
+
+
+class StudentAnswer(models.Model):
+    student = models.ForeignKey("core.Student", on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected = models.CharField(max_length=1)
+    is_correct = models.BooleanField()
 
 
 class Enrollment(models.Model):
@@ -42,5 +69,6 @@ class Progress(models.Model):
 
     class Meta:
         unique_together = ["student", "lesson"]
-    def __str__(self):
-        return f"{self.student} - {self.lesson} : {'Completed' if self.completed else 'Incomplete'}"
+
+        def __str__(self):
+            return f"{self.student} - {self.lesson} : {'Completed' if self.completed else 'Incomplete'}"
