@@ -1,52 +1,57 @@
-import { useEffect, useState } from "react"
-import { getDashboard, resumeCourse } from "./api"
-import "./styles.css"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getDashboard, resumeCourse } from "./api";
+import "./styles.css";
 
-export default function Dashboard({ openCourse, navigate }) {
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+export default function Dashboard() {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // Load student dashboard
   useEffect(() => {
-    getDashboard()
-      .then(data => {
-        setCourses(data.courses || [])
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error(err)
-        setError("Failed to load dashboard")
-        setLoading(false)
-      })
-  }, [])
+    const load = async () => {
+      try {
+        const data = await getDashboard();
+        setCourses(data);
+      } catch (err) {
+        console.error("Dashboard error:", err);
+        alert("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // 🔄 Loading state
-  if (loading) {
-    return <div className="spinner">Loading dashboard...</div>
-  }
+    load();
+  }, [navigate]);
 
-  // ❌ Error state
-  if (error) {
-    return <div className="error">{error}</div>
-  }
+  // Resume last lesson
+  const handleResume = async (courseId) => {
+    try {
+      const data = await resumeCourse(courseId);
 
-  // 📭 Empty state
-  if (courses.length === 0) {
-    return <p>No courses enrolled yet.</p>
-  }
+      if (data.lesson_id) {
+        navigate(`/lesson/${data.lesson_id}`);
+      } else {
+        alert("No lesson to resume for this course");
+      }
+    } catch (err) {
+      console.error("Resume error:", err);
+      alert("Failed to resume course");
+    }
+  };
 
-  // ▶ Resume handler
-  const handleResume = (courseId) => {
-    resumeCourse(courseId).then(data => {
-      navigate(`/course/${courseId}/lesson/${data.lesson_id}`)
-    })
-  }
+  if (loading) return <p>Loading dashboard...</p>;
 
   return (
     <div className="container">
-      <h2>My Learning</h2>
+      <h2>📚 My Learning</h2>
 
-      {courses.map(course => (
+      {courses.length === 0 && <p>No enrolled courses</p>}
+
+      {courses.map((course) => (
         <div key={course.course_id} className="card">
           <h3>{course.course}</h3>
 
@@ -55,15 +60,15 @@ export default function Dashboard({ openCourse, navigate }) {
             <div
               className="progress-fill"
               style={{ width: `${course.progress}%` }}
-            ></div>
+            />
           </div>
 
           <p>
-            {course.completed} / {course.total_lessons} lessons completed
+            {course.completed} / {course.total} lessons completed
           </p>
 
-          <div className="btn-group">
-            <button onClick={() => openCourse(course.course_id)}>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={() => navigate(`/course/${course.course_id}`)}>
               View Lessons
             </button>
 
@@ -74,5 +79,5 @@ export default function Dashboard({ openCourse, navigate }) {
         </div>
       ))}
     </div>
-  )
+  );
 }

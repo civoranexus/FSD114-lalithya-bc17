@@ -42,11 +42,13 @@ def course_lessons(request, course_id):
             "unlocked": unlocked
         })
 
-    return Response(data)
+    return Response({
+        "courses":data
+        })
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsStudent])
 def enroll(request):
     course_id = request.data.get("course")
     student = request.user.student

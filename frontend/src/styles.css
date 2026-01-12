@@ -1,76 +1,132 @@
+/* ---------- GENERAL ---------- */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f9f9f9;
+  margin: 0;
+  padding: 0;
+}
+
 .container {
-  max-width: 800px;
-  margin: auto;
+  max-width: 900px;
+  margin: 40px auto;
   padding: 20px;
-}
-
-.card {
   background: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
   border-radius: 12px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
 }
 
-.progress-bg {
-  width: 100%;
-  height: 12px;
-  background: #e0e0e0;
+/* ---------- HEADINGS ---------- */
+h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+h3 {
+  color: #555;
+  margin-top: 15px;
+  margin-bottom: 10px;
+}
+
+/* ---------- CARDS ---------- */
+.card {
+  background: #fafafa;
+  padding: 15px 20px;
+  margin-bottom: 15px;
   border-radius: 10px;
-  overflow: hidden;
-  margin: 10px 0;
+  border: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4caf50, #00c853);
-  transition: width 0.8s ease-in-out;
-  border-radius: 10px;
-}
-
+/* ---------- BUTTONS ---------- */
 button {
-  margin-top: 10px;
-  padding: 10px 15px;
-  background: #4f46e5;
-  color: white;
+  background: #4f46e5; /* Indigo-600 */
+  color: #fff;
   border: none;
+  padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
 }
-.progress-bar {
-  height: 10px;
-  background: #ddd;
-  border-radius: 10px;
+
+button:hover {
+  background: #4338ca; /* Indigo-700 */
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* ---------- PROGRESS BAR ---------- */
+.progress-bg {
+  background: #e5e7eb; /* Gray-200 */
+  border-radius: 8px;
+  height: 12px;
+  width: 100%;
+  margin: 10px 0;
   overflow: hidden;
 }
 
 .progress-fill {
+  background: #4f46e5; /* Indigo-600 */
   height: 100%;
-  background: linear-gradient(90deg,#4caf50,#00c853);
-  transition: width 0.8s ease-in-out;
-}
-button.locked {
-  background: #ccc;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.lesson-open {
-  background: #1976d2;
-  color: white;
-  padding: 10px;
-  margin: 6px 0;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  width: 0;
+  border-radius: 8px;
+  transition: width 0.5s ease;
 }
 
-.lesson-locked {
-  background: #cccccc;
-  color: #555;
-  padding: 10px;
-  margin: 6px 0;
-  border: none;
-  border-radius: 6px;
-  cursor: not-allowed;
-  opacity: 0.7;
+/* ---------- FORM ---------- */
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+form div {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+/* ---------- QUIZ ---------- */
+.card input[type="radio"] {
+  margin-right: 8px;
+}
+
+/* ---------- BACK BUTTON ---------- */
+button.back {
+  background: #f3f4f6;
+  color: #111;
+  margin-bottom: 20px;
+}
+
+button.back:hover {
+  background: #e5e7eb;
+}
+
+/* ---------- VIDEO ---------- */
+video {
+  border-radius: 10px;
+  margin-bottom: 15px;
+  background: #000;
+}
+
+/* ---------- ALERTS ---------- */
+.alert {
+  color: #b91c1c; /* Red-700 */
+  font-weight: 500;
+  margin-top: 10px;
 }
