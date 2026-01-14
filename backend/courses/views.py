@@ -274,8 +274,9 @@ def submit_quiz(request, quiz_id):
         if not selected:
             continue
 
-        selected = selected.upper()
-        is_correct = selected == q.correct.upper()
+        selected = selected.strip().upper()
+        correct_option = q.correct.strip().upper()
+        is_correct = selected == correct.upper()
 
         StudentAnswer.objects.update_or_create(
             student=student,

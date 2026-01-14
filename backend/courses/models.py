@@ -16,17 +16,19 @@ class Lesson(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     order = models.IntegerField(default=1)
-    # ✅ Step 1: Video upload
     video = models.FileField(upload_to="lesson_videos/", blank=True, null=True)
+    # One quiz per lesson
+    quiz = models.OneToOneField("Quiz", on_delete=models.SET_NULL, null=True, blank=True, related_name="lesson")
+
     class Meta:
         ordering = ["order"]
-    
 
     def __str__(self):
         return self.title
-    
+
+
 class Quiz(models.Model):
-    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE)
+    # ❌ Remove OneToOneField to Course
     title = models.CharField(max_length=200)
 
     def __str__(self):
@@ -40,7 +42,10 @@ class Question(models.Model):
     option_b = models.CharField(max_length=200)
     option_c = models.CharField(max_length=200)
     option_d = models.CharField(max_length=200)
-    correct = models.CharField(max_length=1)  # A, B, C, D
+    correct= models.CharField(
+        max_length=1,
+        choices=[('A','A'), ('B','B'), ('C','C'), ('D','D')]
+    )  # 'A', 'B', 'C', 'D'
 
     def __str__(self):
         return self.text
