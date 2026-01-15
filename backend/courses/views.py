@@ -61,18 +61,35 @@ def enroll(request):
 # -----------------------------
 
 def is_lesson_unlocked(student, lesson):
-    previous = Lesson.objects.filter(
-        course=lesson.course,
-        order__lt=lesson.order
-    )
+    """
+    Check if a lesson is unlocked for the student.
+    First lesson is always unlocked.
+    Subsequent lessons require all previous lessons and their quizzes to be completed/passed.
+    """
+    # First lesson always unlocked
+    if lesson.order == 1:
+        return True
 
-    completed = Progress.objects.filter(
-        student=student,
-        lesson__in=previous,
-        completed=True
-    ).count()
+    # All previous lessons
+    previous = Lesson.objects.filter(course=lesson.course, order__lt=lesson.order).order_by("order")
 
-    return completed == previous.count()
+    for prev in previous:
+        # Check if lesson is completed
+        lesson_done = Progress.objects.filter(student=student, lesson=prev, completed=True).exists()
+
+        # Check if quiz is passed (if quiz exists)
+        quiz_done = True  # default True if no quiz
+        if hasattr(prev, "quiz") and prev.quiz:
+            quiz_done = Quiz.objects.filter(
+                id=prev.quiz.id,
+                id__in=student.completed_quizzes.values_list("id", flat=True)
+            ).exists()
+
+        # If either lesson or quiz not done → locked
+        if not (lesson_done and quiz_done):
+            return False
+
+    return True
 
 
 @api_view(["GET"])
@@ -85,6 +102,31 @@ def lesson_detail(request, lesson_id):
         return Response({"detail": "Locked"}, status=403)
 
     return Response(LessonSerializer(lesson).data)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsStudent])
+def quiz_detail(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    student = request.user.student
+    lesson = get_object_or_404(Lesson, quiz=quiz)
+
+    passed = student.completed_quizzes.filter(id=quiz.id).exists()
+
+    return Response({
+        "id": quiz.id,
+        "title": quiz.title,
+        "locked": passed,
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "a": q.option_a,
+                "b": q.option_b,
+                "c": q.option_c,
+                "d": q.option_d,
+            }
+            for q in quiz.questions.all()
+        ]
+    })
 
 
 @api_view(["GET"])
@@ -256,7 +298,7 @@ def resume_course(request, course_id):
 
 
 # -----------------------------
-# QUIZ & AUTO PROGRESS
+# QUIZ SUBMIT & AUTO PROGRESS
 # -----------------------------
 
 @api_view(["POST"])
@@ -264,43 +306,56 @@ def resume_course(request, course_id):
 def submit_quiz(request, quiz_id):
     student = request.user.student
     quiz = get_object_or_404(Quiz, id=quiz_id)
-
     answers = request.data.get("answers", {})
-    correct = 0
+
     total = quiz.questions.count()
 
+    # ❌ No answers submitted
+    if not answers:
+        return Response({"error": "No answers submitted"}, status=400)
+
+    correct = 0
+    result = []
+
     for q in quiz.questions.all():
-        selected = answers.get(str(q.id))
-        if not selected:
-            continue
-
-        selected = selected.strip().upper()
+        selected = str(answers.get(str(q.id), "")).strip().upper()
         correct_option = q.correct.strip().upper()
-        is_correct = selected == correct.upper()
 
-        StudentAnswer.objects.update_or_create(
-            student=student,
-            question=q,
-            defaults={
-                "selected": selected,
-                "is_correct": is_correct
-            }
-        )
+        is_correct = selected == correct_option
 
         if is_correct:
             correct += 1
 
+        result.append({
+            "question_id": q.id,
+            "selected": selected,
+            "correct": correct_option,
+            "is_correct": is_correct
+        })
+
+        StudentAnswer.objects.update_or_create(
+            student=student,
+            question=q,
+            defaults={"selected": selected, "is_correct": is_correct}
+        )
+
     score = int((correct / total) * 100)
     passed = score >= 60
 
+    # Only now unlock lesson
     if passed:
+        lesson = get_object_or_404(Lesson, quiz=quiz)
         Progress.objects.update_or_create(
             student=student,
-            lesson=quiz.lesson,
+            lesson=lesson,
             defaults={"completed": True}
         )
 
-    return Response({"score": score, "passed": passed})
+    return Response({
+        "score": score,
+        "passed": passed,
+        "details": result
+    })
 
 
 # -----------------------------

@@ -3,31 +3,33 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getQuiz, submitQuiz } from "./api";
 
 export default function QuizPage() {
-  const { id } = useParams();   // quiz id
+  const { id } = useParams(); // quiz id
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
 
+  // Load quiz on mount
   useEffect(() => {
     getQuiz(id)
-      .then(setQuiz)
+      .then((data) => setQuiz(data))
       .catch(() => alert("Failed to load quiz"));
   }, [id]);
 
-  const selectAnswer = (questionId, optionId) => {
-    setAnswers({ ...answers, [questionId]: optionId });
+  const selectAnswer = (questionId, optionKey) => {
+    setAnswers({ ...answers, [questionId]: optionKey });
   };
 
-  const submit = async () => {
+  const handleSubmit = async () => {
     try {
-      const data = await submitQuiz(id, answers);
-      setResult(data);
+      const res = await submitQuiz(id, answers);
+      setResult(res);
 
-      if (data.passed) {
+      if (res.passed) {
         alert("🎉 Quiz passed! Next lesson unlocked!");
-        navigate(-1);   // go back to lesson list
+      } else {
+        alert("❌ Some answers are wrong. Try again.");
       }
     } catch {
       alert("Quiz submit failed");
@@ -36,33 +38,59 @@ export default function QuizPage() {
 
   if (!quiz) return <p>Loading quiz...</p>;
 
+  // ✅ Lock quiz if already passed
+  if (quiz.locked) {
+    return <h2>✅ Quiz already passed</h2>;
+  }
+
   return (
     <div className="container">
       <h2>{quiz.title}</h2>
 
-      {quiz.questions.map(q => (
-        <div key={q.id} className="card">
-          <h4>{q.question}</h4>
+      {quiz.questions.map((q) => (
+        <div key={q.id} className="card" style={{ padding: "10px", margin: "10px 0" }}>
+          <h4>{q.text}</h4>
 
-          {q.options.map(o => (
-            <label key={o.id} style={{ display: "block" }}>
-              <input
-                type="radio"
-                name={q.id}
-                checked={answers[q.id] === o.id}
-                onChange={() => selectAnswer(q.id, o.id)}
-              />
-              {o.text}
-            </label>
-          ))}
+          {["a", "b", "c", "d"].map((key) => {
+            let bg = "";
+
+            // ✅ Safely highlight correct/wrong after submit
+            if (result?.details) {
+              const r = result.details.find((d) => d.question_id === q.id);
+              if (r) {
+                if (key.toUpperCase() === r.correct) bg = "#c8f7c5"; // green
+                else if (key.toUpperCase() === r.selected) bg = "#f7c5c5"; // red
+              }
+            }
+
+            return (
+              <label
+                key={key}
+                style={{ display: "block", background: bg, padding: "5px", margin: "5px 0" }}
+              >
+                <input
+                  type="radio"
+                  name={q.id}
+                  disabled={!!result}
+                  checked={answers[q.id] === key.toUpperCase()}
+                  onChange={() => selectAnswer(q.id, key.toUpperCase())}
+                />
+                {q[key]}
+              </label>
+            );
+          })}
         </div>
       ))}
 
-      <button onClick={submit}>Submit Quiz</button>
+      {!result && (
+        <button onClick={handleSubmit} style={{ marginTop: "20px" }}>
+          Submit Quiz
+        </button>
+      )}
 
       {result && (
-        <div className="card">
-          <p>Score: {result.score}%</p>
+        <div style={{ marginTop: 20 }}>
+          <h3>Score: {result.score}%</h3>
           <p>{result.passed ? "✅ Passed" : "❌ Failed"}</p>
         </div>
       )}

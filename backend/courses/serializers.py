@@ -9,9 +9,18 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class LessonSerializer(serializers.ModelSerializer):
+    quiz_id = serializers.IntegerField(source="quiz.id", read_only=True)
+    has_quiz = serializers.SerializerMethodField()
+
     class Meta:
         model = Lesson
-        fields = "__all__"
+        fields = [
+            "id", "title", "order", "video", "content",
+            "quiz_id", "has_quiz"
+        ]
+
+    def get_has_quiz(self, obj):
+        return hasattr(obj, "quiz") and obj.quiz is not None
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):

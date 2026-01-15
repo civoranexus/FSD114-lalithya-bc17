@@ -55,11 +55,18 @@ export const submitQuiz = async (quizId, answers) => {
     headers: { "Content-Type": "application/json", ...authHeader() },
     body: JSON.stringify({ answers }),
   });
-  return res.json();
+
+  const data = await res.json();   // always read JSON
+
+  if (!res.ok) {
+    throw data;   // throw backend error properly
+  }
+
+  return data;
 };
 // GET QUIZ
 export const getQuiz = async (quizId) => {
-  const res = await fetch(`http://127.0.0.1:8000/api/student/quiz/${quizId}/`, {
+  const res = await fetch(`http://127.0.0.1:8000/api/quiz/${quizId}/`, {
     headers: authHeader()
   });
 
