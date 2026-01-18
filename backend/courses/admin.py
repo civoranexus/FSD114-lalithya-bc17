@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import Course, Lesson, Enrollment, Progress, Quiz, Question, StudentAnswer
+from .models import Certificate
+
 
 
 @admin.register(Course)
@@ -35,4 +37,8 @@ class QuestionAdmin(admin.ModelAdmin):
 @admin.register(StudentAnswer)
 class StudentAnswerAdmin(admin.ModelAdmin):
     list_display = ["id", "student", "question", "selected", "is_correct"]
-
+@admin.register(Certificate)
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "course", "issued_at"]
+    list_filter = ('is_revoked', 'issued_at')
+    search_fields = ('student__username', 'course__title')

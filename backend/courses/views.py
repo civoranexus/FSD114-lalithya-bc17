@@ -476,10 +476,11 @@ def certificate(request, course_id):
         student=user,                    # ✅ User model (matches Certificate)
         course=course,
     )
-
-    verify_url = request.build_absolute_uri(
-    reverse("verify_certificate", args=[certificate_obj.id])
-)
+    if not certificate_obj.issued_at:
+        certificate_obj.issued_at = now()
+        certificate_obj.save()
+    verify_url = f"http://192.168.43.124:8000/verify-certificate/{certificate_obj.id}/"
+    print("VERIFY URL:", verify_url)
     
 
     qr = qrcode.make(verify_url)
@@ -525,11 +526,30 @@ def mark_lesson_completed(request, lesson_id):
 from django.shortcuts import get_object_or_404, render
 from .models import Certificate
 
+from django.shortcuts import get_object_or_404, render
+
+from django.shortcuts import render, get_object_or_404
+from .models import Certificate
+
 def verify_certificate(request, id):
-    cert = get_object_or_404(Certificate, id=id)
-    return render(request, "courses/verify_certificate.html", {
-        "student": cert.student.get_full_name() or cert.student.username,
-        "course": cert.course.title,
-        "date": cert.issued_at,
-        "certificate_id": cert.id,
-    })
+    try:
+        certificate = Certificate.objects.get(id=id)
+    except Certificate.DoesNotExist:
+        # ❌ Invalid certificate
+        return render(request, "courses/invalid_certificate.html")
+
+    if certificate.is_revoked:
+        # 🚫 Revoked certificate
+        return render(request, "courses/revoked_certificate.html", {
+            "certificate_id": certificate.id
+        })
+
+    # ✅ Valid certificate
+    context = {
+        "student": certificate.student.get_full_name() or certificate.student.username,
+        "course": certificate.course.title,
+        "issued_on": certificate.issued_at.strftime("%d %B %Y") if certificate.issued_at else "—",
+        "certificate_id": certificate.id,
+    }
+
+    return render(request, "courses/verify_certificate.html", context)
