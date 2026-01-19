@@ -479,7 +479,10 @@ def certificate(request, course_id):
     if not certificate_obj.issued_at:
         certificate_obj.issued_at = now()
         certificate_obj.save()
-    verify_url = f"http://192.168.43.124:8000/verify-certificate/{certificate_obj.id}/"
+    
+    verify_url = request.build_absolute_uri(
+    reverse("verify_certificate", args=[certificate_obj.id])
+   )
     print("VERIFY URL:", verify_url)
     
 
