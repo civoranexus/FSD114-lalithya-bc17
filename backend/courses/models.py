@@ -1,0 +1,185 @@
+from django.db import models
+from core.models import Student, Teacher
+import uuid
+
+
+class Course(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+
+class Lesson(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons")
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    order = models.IntegerField(default=1)
+    video_url = models.URLField(blank=True, null=True)
+    # One quiz per lesson
+    quiz = models.OneToOneField("Quiz", on_delete=models.SET_NULL, null=True, blank=True, related_name="lesson")
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.title
+
+
+class Quiz(models.Model):
+    # ❌ Remove OneToOneField to Course
+    title = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.title
+
+
+class Question(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+    text = models.CharField(max_length=255)
+    option_a = models.CharField(max_length=200)
+    option_b = models.CharField(max_length=200)
+    option_c = models.CharField(max_length=200)
+    option_d = models.CharField(max_length=200)
+    correct= models.CharField(
+        max_length=1,
+        choices=[('A','A'), ('B','B'), ('C','C'), ('D','D')]
+    )  # 'A', 'B', 'C', 'D'
+
+    def __str__(self):
+        return self.text
+
+
+class StudentAnswer(models.Model):
+    student = models.ForeignKey("core.Student", on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected = models.CharField(max_length=1)
+    is_correct = models.BooleanField()
+
+
+class Enrollment(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["student", "course"]
+
+        def __str__(self):
+            return f"{self.student} enrolled in {self.course}"
+
+class Progress(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    completed = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ["student", "lesson"]
+
+        def __str__(self):
+            return f"{self.student} - {self.lesson} : {'Completed' if self.completed else 'Incomplete'}"
+
+from django.db import models
+from django.contrib.auth.models import User
+from courses.models import Course  # adjust if needed
+
+class Certificate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    issued_at = models.DateTimeField(blank=True, null=True)
+    is_revoked = models.BooleanField(default=False)
+      # 🔒 SECURITY FLAG
+    class Meta:
+        unique_together = ("student", "course")
+    def __str__(self):
+        return f"{self.student.username} - {self.course.title}"
+    
+class Announcement(models.Model):
+    ROLE_CHOICES = [
+        ("student", "Student"),
+        ("teacher", "Teacher"),
+        ("all", "All"),
+    ]
+
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    target_role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default="all"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="announcements",
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+    
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Announcement)
+def create_notifications_for_announcement(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    from django.contrib.auth.models import User
+
+    if instance.target_role == "student":
+        users = User.objects.filter(student__isnull=False)
+    elif instance.target_role == "teacher":
+        users = User.objects.filter(teacher__isnull=False)
+    else:
+        users = User.objects.all()
+
+    for user in users:
+        Notification.objects.create(
+            user=user,
+            title=instance.title,
+            message=instance.message,
+            created_by=instance.created_by
+        )
+    
+from django.contrib.auth.models import User
+
+from django.db import models
+from django.contrib.auth.models import User
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+
+    title = models.CharField(
+        max_length=100,
+        default="Notification"   # ✅ ADD DEFAULT
+    )
+
+    message = models.CharField(max_length=255)
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="created_notifications",
+        null=True,      # ✅ TEMP ALLOW NULL
+        blank=True
+    )
+
+    is_read = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    

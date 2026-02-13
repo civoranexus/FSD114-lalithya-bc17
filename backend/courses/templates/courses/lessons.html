@@ -1,0 +1,11 @@
+<h2>{{ course.title }}</h2>
+
+{% for l in lessons %}
+<div class="lesson">
+    {% if l.unlocked %}
+        ✔ <a href="/lesson/{{ l.id }}/">{{ l.title }}</a>
+    {% else %}
+        🔒 {{ l.title }}
+    {% endif %}
+</div>
+{% endfor %}

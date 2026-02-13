@@ -1,0 +1,16 @@
+<!-- LEGACY FILE – NOT USED (JWT + REACT LOGIN) -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+<h2>Django Login</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+</form>
+</body>
+</html>

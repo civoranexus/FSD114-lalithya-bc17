@@ -1,0 +1,69 @@
+from django.contrib import admin
+from .models import Announcement, Course, Lesson, Enrollment,Notification, Progress, Quiz, Question, StudentAnswer
+from .models import Certificate
+from django.contrib import admin
+from .models import Announcement, Notification
+
+
+
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ["id", "title"]
+
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ["id", "title", "course", "order"]
+
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "course"]
+
+
+@admin.register(Progress)
+class ProgressAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "lesson", "completed"]
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ["id", "title", "lesson"]
+
+
+@admin.register(Question)
+class QuestionAdmin(admin.ModelAdmin):
+    list_display = ["id", "text", "quiz", "correct"]
+
+
+@admin.register(StudentAnswer)
+class StudentAnswerAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "question", "selected", "is_correct"]
+    
+@admin.register(Certificate)
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "course", "issued_at"]
+    list_filter = ('is_revoked', 'issued_at')
+    search_fields = ('student__username', 'course__title')
+
+from django.contrib import admin
+from .models import Announcement
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("title", "message")
+    ordering = ("-created_at",)
+
+from django.contrib import admin
+from .models import Notification
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "title", "is_read", "created_at")
+    list_filter = ("is_read", "created_at")
+    search_fields = ("title", "message", "user__username")
+    ordering = ("-created_at",)
